@@ -3,6 +3,8 @@
 #
 # This work is licensed under the NVIDIA Source Code License
 # ---------------------------------------------------------------
+import os
+import cv2
 from einops import rearrange
 from einops.layers.torch import Rearrange
 import numpy as np
@@ -124,7 +126,14 @@ class SegFormerHead(BaseDecodeHead):
         x = self._transform_inputs(inputs)  # len=4, 1/4,1/8,1/16,1/32
         # c1, c2, c3, c4 = x
         c1, c2, c3 = x
+        
+        vis_features(c1,'reps_vis/c1/')
+        vis_features(c2,'reps_vis/c2/')
+        vis_features(c3,'reps_vis/c3/')
 
+        vis_features(c1,'reps_vis/c1/',channel=3)
+        vis_features(c2,'reps_vis/c2/',channel=3)
+        vis_features(c3,'reps_vis/c3/',channel=3)
         ############## MLP decoder on C1-C4 ###########
         # n, _, h, w = c4.shape
         n, _, h, w = c3.shape
@@ -141,6 +150,9 @@ class SegFormerHead(BaseDecodeHead):
         _c1 = self.linear_c1(c1).permute(0, 2, 1).reshape(n, -1, c1.shape[2], c1.shape[3])
 
         _c = self.linear_fuse(torch.cat([_c3, _c2, _c1], dim=1))
+        
+        vis_features(_c,'reps_vis/shallow_fusion/')
+        vis_features(_c,'reps_vis/shallow_fusion/',channel=3)
 
         dou_x=self.dou_cls_pred(self.dropout(_c)) # 2  classes   => 2*h*w
             
@@ -155,6 +167,9 @@ class SegFormerHead(BaseDecodeHead):
             fused_c1=self.fused_c2_c1(resize(fused_c2,size=_c1.size()[2:],mode='bilinear',align_corners=False),_c1)
             fused_c1=self.fused_c1_mix(fused_c1)
             
+            vis_features(fused_c1,'reps_vis/mix_fusion/')
+            vis_features(fused_c1,'reps_vis/mix_fusion/',channel=3)
+        
             # ****** predict *******
             # nor_hyp=self.restrict_nor_hyp(fused_fg) # predicte nor/hyp classes
             fused_fg=self.filter_fused_c1(torch.cat([fused_c1,fused_fg],dim=1))
@@ -267,3 +282,17 @@ class Mix_FNN(nn.Module):
 
         out = x + re_x
         return out
+
+
+def vis_features(reps,save_path,channel=1):
+    for rep_idx,rep in enumerate(reps):
+        rep=rep.detach().cpu().numpy()
+        
+        for chann_idx in range(rep.shape[0]//channel):
+            save_reps=rep[chann_idx:(chann_idx+1)*channel,...].permute(1,2,0).contiguous()
+            
+            img_save_path=f"{save_path}/sample_{rep_idx}/{channel}/{chann_idx}.png"
+            os.makedirs(os.path.basename(img_save_path),exist_ok=True)
+            cv2.imwrite(img_save_path,save_reps.detach().cpu().numpy())
+        
+        print(f'load sample id: {rep_idx} image reps success....')
