@@ -227,7 +227,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         Returns:
             Tensor: Output segmentation map.
         """
-        return self.forward(inputs)
+        return self.forward(inputs,img_metas)
 
     def cls_seg(self, feat):
         """Classify each pixel."""

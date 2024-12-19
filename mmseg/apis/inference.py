@@ -76,7 +76,7 @@ class LoadImage:
         return results
 
 
-def inference_segmentor(model, img):
+def inference_segmentor(model, img, save_path=None):
     """Inference image(s) with the segmentor.
 
     Args:
@@ -102,6 +102,16 @@ def inference_segmentor(model, img):
     else:
         data['img_metas'] = [i.data[0] for i in data['img_metas']]
 
+    if save_path is not None:
+        img_metas=[]
+        img_len=len(img) if isinstance(img,(list,tuple)) else 1
+        if not isinstance(save_path,(list,tuple)):
+            save_path=[save_path]*img_len
+        for img_meta,path in zip(data['img_metas'],save_path):
+            img_meta[0]['save_path']=path        
+            img_metas.append(img_meta)
+        data['img_metas']=img_metas
+    
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
