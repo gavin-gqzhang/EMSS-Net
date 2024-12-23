@@ -5,6 +5,8 @@ import numpy as np
 from glob import glob
 import openslide
 from tools.load_data import xml_to_region
+import shutil
+from tqdm import tqdm
 
 label_mapping = {
     'Q': 0,
@@ -32,7 +34,8 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 img_patch = slide_region[start_point[0]:start_point[0] + crop_size[0],
                             start_point[1]:, :]
                 gt_patch=gt_mask[start_point[0]:start_point[0] + crop_size[0],
-                            start_point[1]:, :]
+                            start_point[1]:]
+
                 result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
@@ -41,7 +44,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                     result = cv2.resize(result.astype('float'), (img_patch.shape[1], img_patch.shape[0]))
                 # rtn_mask[start_point[0]:start_point[0] + crop_size[0],
                 # start_point[1]:] = result
-                
+
                 os.makedirs(f'{save_path}/img_patch',exist_ok=True)
                 cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
@@ -55,7 +58,8 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
 
             elif dimension_1 == split_y - 1 and dimension_0 == split_x - 1:
                 img_patch = slide_region[start_point[0]:, start_point[1]:, :]
-                gt_patch=gt_mask[start_point[0]:, start_point[1]:, :]
+                gt_patch=gt_mask[start_point[0]:, start_point[1]:]
+
                 result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
@@ -63,7 +67,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                     #     f'result shape : {result.shape}, img_patch shape : {img_patch.shape} resized shape : {cv2.resize(result.astype("float"),(img_patch.shape[1],img_patch.shape[0])).shape}')
                     result = cv2.resize(result.astype('float'), (img_patch.shape[1], img_patch.shape[0]))
                 # rtn_mask[start_point[0]:, start_point[1]:] = result
-                
+
                 os.makedirs(f'{save_path}/img_patch',exist_ok=True)
                 cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
@@ -76,7 +80,8 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
 
             elif dimension_0 == split_x - 1 and dimension_1 != split_y - 1:
                 img_patch = slide_region[start_point[0]:, start_point[1]:start_point[1] + crop_size[1], :]
-                gt_patch=gt_mask[start_point[0]:, start_point[1]:start_point[1] + crop_size[1], :]
+                gt_patch=gt_mask[start_point[0]:, start_point[1]:start_point[1] + crop_size[1]]
+
                 result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
@@ -84,7 +89,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                     #     f'result shape : {result.shape}, img_patch shape : {img_patch.shape} resized shape : {cv2.resize(result.astype("float"),(img_patch.shape[1],img_patch.shape[0])).shape}')
                     result = cv2.resize(result.astype('float'), (img_patch.shape[1], img_patch.shape[0]))
                 # rtn_mask[start_point[0]:, start_point[1]:start_point[1] + crop_size[1]] = result
-                
+
                 os.makedirs(f'{save_path}/img_patch',exist_ok=True)
                 cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
@@ -99,7 +104,8 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 img_patch = slide_region[start_point[0]:start_point[0] + crop_size[0],
                             start_point[1]:start_point[1] + crop_size[1], :]
                 gt_patch=gt_mask[start_point[0]:start_point[0] + crop_size[0],
-                            start_point[1]:start_point[1] + crop_size[1], :]
+                            start_point[1]:start_point[1] + crop_size[1]]
+
                 result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
@@ -126,14 +132,14 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
 
 
 if __name__=="__main__":
-    config='/home/dell/zgq/medicine_code/local_configs/pathformer/B5/pathformer.b5.1024x1024.cancerseg.160k.py'
-    checkpoint=""
+    config='local_configs/pathformer/B5/pathformer.b5.1024x1024.cancerseg.160k.py'
+    checkpoint="/media/ubuntu/Seagate Basic/EMSS-Net Model/cls4/iter_240000.pth"
     
     model = init_segmentor(config, checkpoint, device='cuda:0')
-    slide_base_path,xml_base_path='',''
-    save_base_path=''
+    slide_base_path,xml_base_path='/media/ubuntu/Seagate Basic/data-v7-new','/media/ubuntu/Seagate Basic/data-v7-new'
+    save_base_path='vis_reps'
     
-    for slide_name in ['OF-73-E.tif','OF-74-E.tif','OF-28-E.svs','W-10.svs']:
+    for slide_name in tqdm(['OF-73-E.tif','OF-74-E.tif','OF-28-E.svs','W-10.svs']):
         slide_file=f'{slide_base_path}/{slide_name}'
         xml_file=glob(f'{xml_base_path}/{slide_name.split(".")[0]}.xml')[0]
         
@@ -160,5 +166,5 @@ if __name__=="__main__":
         save_path=f'{save_base_path}/{slide_name.split(".")[0]}/'
         mask_lists = crop_pre(model, slide_region, gt_mask, img_size,save_path)
 
-
+        print(f'{slide_name} processe finish')
         

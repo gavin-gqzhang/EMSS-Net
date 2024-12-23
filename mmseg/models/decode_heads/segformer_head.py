@@ -4,6 +4,8 @@
 # This work is licensed under the NVIDIA Source Code License
 # ---------------------------------------------------------------
 import os
+import random
+
 import cv2
 from einops import rearrange
 from einops.layers.torch import Rearrange
@@ -20,6 +22,7 @@ from ..builder import HEADS
 from .decode_head import BaseDecodeHead
 from mmseg.models.utils import *
 import attr
+import matplotlib.pyplot as plt
 
 from IPython import embed
 
@@ -286,10 +289,17 @@ class Mix_FNN(nn.Module):
 
 def vis_features(reps,save_path,channel=1):
     for rep_idx,rep in enumerate(reps):
-        for chann_idx in range(rep.shape[0]//channel):
-            save_reps=rep[chann_idx*channel:(chann_idx+1)*channel,...].permute(1,2,0).contiguous()
-            
+        sample_channels=random.sample(range(rep.shape[0]//channel),min(100,rep.shape[0]//channel))
+        for chann_idx in sample_channels:
+
+            save_reps=rep[chann_idx*channel:(chann_idx+1)*channel,...].permute(1,2,0).contiguous().detach().cpu().data.numpy()
+
             img_save_path=f"{save_path}/sample_{rep_idx}/{channel}/{chann_idx}.png"
             os.makedirs(os.path.dirname(img_save_path),exist_ok=True)
-            cv2.imwrite(img_save_path,save_reps.detach().cpu().numpy())
+
+            norm_reps=((save_reps-save_reps.min())/(save_reps.max()-save_reps.min())*255).astype(np.uint8)
+            if channel==3:
+                color_reps=cv2.applyColorMap(norm_reps,cv2.COLORMAP_JET)
+
+            cv2.imwrite(img_save_path,color_reps)
         

@@ -1,6 +1,7 @@
 import glob
 import os
 
+import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -197,6 +198,51 @@ class EncoderDecoder(BaseSegmentor):
     def _decode_head_forward_test(self, x, img_metas):
         """Run forward function and calculate loss for decode head in
         inference."""
+        """
+        feature_blobs=[]
+        def hook_feature(module,input,output):
+            feature_blobs.append(output.data.cpu().numpy())
+
+        self.decode_head._modules.get('linear_pred')[0].register_forward_hook(hook_feature)
+        weight_softmax,weight_bias=None,None
+        for name,param in self.decode_head.named_parameters():
+            if 'linear_pred.2.weight' in name:
+                weight_softmax=np.squeeze(param.cpu().data.numpy())
+            if 'linear_pred.2.bias' in name:
+                weight_bias=param.cpu().data.numpy()
+        if weight_softmax is None and weight_bias is None:
+            raise ValueError(f'without weight and bias param, decode_head modules: {self.decode_head._modules}')
+
+        def return_cam(feature_conv,weight_softmax,weight_bias,class_idx):
+            size_upsample=(256,256)
+            bs,nc,h,w=feature_conv.shape
+            output_cam=[]
+            for idx in class_idx:
+                if weight_bias is not None:
+                    cam=weight_softmax[idx].dot(feature_conv.reshape(nc,h*w))+weight_bias
+                else:
+                    cam = weight_softmax[idx].dot(feature_conv.reshape(nc, h * w))
+                cam=cam.reshape(h,w)
+                cam=cam-np.min(cam)
+                cam_img=cam/np.max(cam)
+                cam_img=np.uint8(255*cam_img)
+                output_cam.append(cv2.resize(cam_img,size_upsample))
+            return output_cam
+
+        seg_logits=self.decode_head.forward_test(x,img_metas,self.test_cfg)
+        # import pdb
+        # pdb.set_trace()
+        try:
+            cams = return_cam(feature_blobs[0], weight_softmax, weight_bias, [1, 2, 3, 4])
+            for i in range(4):
+                heat_map = cv2.applyColorMap(cams[i], cv2.COLORMAP_JET)
+
+                result = heat_map * 0.3 + (x[0] * 0.5).squeeze(0).permute(1, 2, 0).cpu().data.numpy()[..., :3]
+                cv2.imwrite(f'{img_metas[0]["save_path"]}/cls_{i + 1}_cam.png', result)
+        except Exception as e:
+            print(f'error info: {e}')
+        
+        """
         seg_logits = self.decode_head.forward_test(x, img_metas, self.test_cfg)
         # print(f'exception {seg_logits.size()}')
         # if isinstance(seg_logits, (list, tuple)):
