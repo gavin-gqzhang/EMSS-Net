@@ -1,5 +1,7 @@
 import cv2,os
 import copy
+import sys
+sys.path.insert(0,"/opt/data/private/zgq/medicine_code")
 from mmseg.apis import inference_segmentor, init_segmentor
 import numpy as np
 from glob import glob
@@ -36,7 +38,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 gt_patch=gt_mask[start_point[0]:start_point[0] + crop_size[0],
                             start_point[1]:]
 
-                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
+                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_cam')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
                     # print(
@@ -45,14 +47,14 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 # rtn_mask[start_point[0]:start_point[0] + crop_size[0],
                 # start_point[1]:] = result
 
-                os.makedirs(f'{save_path}/img_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
+                # os.makedirs(f'{save_path}/img_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
-                os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
+                # os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
                 
-                os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
+                # os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
                 count=count+1
                 
 
@@ -60,7 +62,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 img_patch = slide_region[start_point[0]:, start_point[1]:, :]
                 gt_patch=gt_mask[start_point[0]:, start_point[1]:]
 
-                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
+                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_cam')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
                     # print(
@@ -68,21 +70,21 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                     result = cv2.resize(result.astype('float'), (img_patch.shape[1], img_patch.shape[0]))
                 # rtn_mask[start_point[0]:, start_point[1]:] = result
 
-                os.makedirs(f'{save_path}/img_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
+                # os.makedirs(f'{save_path}/img_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
-                os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
+                # os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
                 
-                os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
+                # os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
                 count=count+1
 
             elif dimension_0 == split_x - 1 and dimension_1 != split_y - 1:
                 img_patch = slide_region[start_point[0]:, start_point[1]:start_point[1] + crop_size[1], :]
                 gt_patch=gt_mask[start_point[0]:, start_point[1]:start_point[1] + crop_size[1]]
 
-                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
+                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_cam')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
                     # print(
@@ -90,14 +92,14 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                     result = cv2.resize(result.astype('float'), (img_patch.shape[1], img_patch.shape[0]))
                 # rtn_mask[start_point[0]:, start_point[1]:start_point[1] + crop_size[1]] = result
 
-                os.makedirs(f'{save_path}/img_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
+                # os.makedirs(f'{save_path}/img_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
-                os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
+                # os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
                 
-                os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
+                # os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
                 count=count+1
 
             else:
@@ -106,7 +108,7 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 gt_patch=gt_mask[start_point[0]:start_point[0] + crop_size[0],
                             start_point[1]:start_point[1] + crop_size[1]]
 
-                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_reps')  # shape:(segmentor_rtn,batch_size,h,w)
+                result = inference_segmentor(model, img_patch, f'{save_path}/{count}_cam')  # shape:(segmentor_rtn,batch_size,h,w)
                 result=result[-1][0]
                 if result.shape != img_patch.shape[:-1]:
                     # print(
@@ -115,14 +117,14 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
                 # rtn_mask[start_point[0]:start_point[0] + crop_size[0],
                 # start_point[1]:start_point[1] + crop_size[1]] = result
 
-                os.makedirs(f'{save_path}/img_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
+                # os.makedirs(f'{save_path}/img_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/img_patch/{count}.png',img_patch)
                 
-                os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
+                # os.makedirs(f'{save_path}/pre_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/pre_patch/{count}.png',result)
                 
-                os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
-                cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
+                # os.makedirs(f'{save_path}/gt_patch',exist_ok=True)
+                # cv2.imwrite(f'{save_path}/gt_patch/{count}.png',gt_patch)
                 count=count+1
 
             start_point = (start_point[0], start_point[1] + crop_size[1])
@@ -133,10 +135,10 @@ def crop_pre(model,slide_region,gt_mask, img_size,save_path, crop_size=(1024,102
 
 if __name__=="__main__":
     config='local_configs/pathformer/B5/pathformer.b5.1024x1024.cancerseg.160k.py'
-    checkpoint="/media/ubuntu/Seagate Basic/EMSS-Net Model/cls4/iter_240000.pth"
+    checkpoint="work_dirs/cls4/iter_240000.pth"
     
     model = init_segmentor(config, checkpoint, device='cuda:0')
-    slide_base_path,xml_base_path='/media/ubuntu/Seagate Basic/data-v7-new','/media/ubuntu/Seagate Basic/data-v7-new'
+    slide_base_path,xml_base_path='datasets/data-v3','datasets/data-v4'
     save_base_path='vis_reps'
     
     for slide_name in tqdm(['OF-73-E.tif','OF-74-E.tif','OF-28-E.svs','W-10.svs']):

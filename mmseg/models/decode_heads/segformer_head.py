@@ -130,13 +130,13 @@ class SegFormerHead(BaseDecodeHead):
         # c1, c2, c3, c4 = x
         c1, c2, c3 = x
         
-        vis_features(c1,f'{img_metas[0]["save_path"]}/c1/')
-        vis_features(c2,f'{img_metas[0]["save_path"]}/c2/')
-        vis_features(c3,f'{img_metas[0]["save_path"]}/c3/')
+        # vis_features(c1,f'{img_metas[0]["save_path"]}/c1/')
+        # vis_features(c2,f'{img_metas[0]["save_path"]}/c2/')
+        # vis_features(c3,f'{img_metas[0]["save_path"]}/c3/')
 
-        vis_features(c1,f'{img_metas[0]["save_path"]}/c1/',channel=3)
-        vis_features(c2,f'{img_metas[0]["save_path"]}/c2/',channel=3)
-        vis_features(c3,f'{img_metas[0]["save_path"]}/c3/',channel=3)
+        # vis_features(c1,f'{img_metas[0]["save_path"]}/c1/',channel=3)
+        # vis_features(c2,f'{img_metas[0]["save_path"]}/c2/',channel=3)
+        # vis_features(c3,f'{img_metas[0]["save_path"]}/c3/',channel=3)
         ############## MLP decoder on C1-C4 ###########
         # n, _, h, w = c4.shape
         n, _, h, w = c3.shape
@@ -154,8 +154,8 @@ class SegFormerHead(BaseDecodeHead):
 
         _c = self.linear_fuse(torch.cat([_c3, _c2, _c1], dim=1))
         
-        vis_features(_c,f'{img_metas[0]["save_path"]}/shallow_fusion/')
-        vis_features(_c,f'{img_metas[0]["save_path"]}/shallow_fusion/',channel=3)
+        # vis_features(_c,f'{img_metas[0]["save_path"]}/shallow_fusion/')
+        # vis_features(_c,f'{img_metas[0]["save_path"]}/shallow_fusion/',channel=3)
 
         dou_x=self.dou_cls_pred(self.dropout(_c)) # 2  classes   => 2*h*w
             
@@ -170,8 +170,8 @@ class SegFormerHead(BaseDecodeHead):
             fused_c1=self.fused_c2_c1(resize(fused_c2,size=_c1.size()[2:],mode='bilinear',align_corners=False),_c1)
             fused_c1=self.fused_c1_mix(fused_c1)
             
-            vis_features(fused_c1,f'{img_metas[0]["save_path"]}/mix_fusion/')
-            vis_features(fused_c1,f'{img_metas[0]["save_path"]}/mix_fusion/',channel=3)
+            # vis_features(fused_c1,f'{img_metas[0]["save_path"]}/mix_fusion/')
+            # vis_features(fused_c1,f'{img_metas[0]["save_path"]}/mix_fusion/',channel=3)
         
             # ****** predict *******
             # nor_hyp=self.restrict_nor_hyp(fused_fg) # predicte nor/hyp classes
@@ -301,5 +301,7 @@ def vis_features(reps,save_path,channel=1):
             if channel==3:
                 color_reps=cv2.applyColorMap(norm_reps,cv2.COLORMAP_JET)
 
-            cv2.imwrite(img_save_path,color_reps)
+                cv2.imwrite(img_save_path,color_reps)
+            else:
+                cv2.imwrite(img_save_path,norm_reps)
         

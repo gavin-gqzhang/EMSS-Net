@@ -142,7 +142,7 @@ class EncoderDecoder(BaseSegmentor):
             x, aux = self.extract_feat(img)
         except:
             x = self.extract_feat(img)
-        out = self._decode_head_forward_test(x, img_metas)
+        out = self._decode_head_forward_test(x,img, img_metas)
         if not isinstance(out, (list, tuple)):
             out=[out]
 
@@ -195,15 +195,21 @@ class EncoderDecoder(BaseSegmentor):
             self.max_acc=acc_seg.item()
         return losses
 
-    def _decode_head_forward_test(self, x, img_metas):
+    def _decode_head_forward_test(self, x,img, img_metas):
         """Run forward function and calculate loss for decode head in
         inference."""
-        """
-        feature_blobs=[]
+        # """
+        feature_blobs,gradients,grad_blobs=[],[],[]
         def hook_feature(module,input,output):
             feature_blobs.append(output.data.cpu().numpy())
+        def hook_grad_feature(module,input,output):
+            grad_blobs.append(output.data.cpu().numpy())
+        def hook_grad(module, grad_input, grad_output):
+            gradients.append(grad_output[0])
 
         self.decode_head._modules.get('linear_pred')[0].register_forward_hook(hook_feature)
+        # self.decode_head._modules.get('linear_pred')[2].register_forward_hook(hook_grad_feature)
+        # self.decode_head._modules.get('linear_pred')[2].register_backward_hook(hook_grad)
         weight_softmax,weight_bias=None,None
         for name,param in self.decode_head.named_parameters():
             if 'linear_pred.2.weight' in name:
@@ -213,37 +219,47 @@ class EncoderDecoder(BaseSegmentor):
         if weight_softmax is None and weight_bias is None:
             raise ValueError(f'without weight and bias param, decode_head modules: {self.decode_head._modules}')
 
-        def return_cam(feature_conv,weight_softmax,weight_bias,class_idx):
+        def return_cam(feature_conv,weight_softmax,weight_bias,class_idx,encode_reps,ori_img):
             size_upsample=(256,256)
             bs,nc,h,w=feature_conv.shape
             output_cam=[]
+            ori_img=cv2.resize(ori_img[0].permute(1,2,0).cpu().numpy(),size_upsample)
             for idx in class_idx:
                 if weight_bias is not None:
-                    cam=weight_softmax[idx].dot(feature_conv.reshape(nc,h*w))+weight_bias
+                    cam=weight_softmax[idx].dot(feature_conv.reshape(nc,h*w))+weight_bias[idx]
                 else:
                     cam = weight_softmax[idx].dot(feature_conv.reshape(nc, h * w))
                 cam=cam.reshape(h,w)
                 cam=cam-np.min(cam)
                 cam_img=cam/np.max(cam)
                 cam_img=np.uint8(255*cam_img)
-                output_cam.append(cv2.resize(cam_img,size_upsample))
-            return output_cam
-
-        seg_logits=self.decode_head.forward_test(x,img_metas,self.test_cfg)
-        # import pdb
-        # pdb.set_trace()
-        try:
-            cams = return_cam(feature_blobs[0], weight_softmax, weight_bias, [1, 2, 3, 4])
-            for i in range(4):
-                heat_map = cv2.applyColorMap(cams[i], cv2.COLORMAP_JET)
-
-                result = heat_map * 0.3 + (x[0] * 0.5).squeeze(0).permute(1, 2, 0).cpu().data.numpy()[..., :3]
-                cv2.imwrite(f'{img_metas[0]["save_path"]}/cls_{i + 1}_cam.png', result)
-        except Exception as e:
-            print(f'error info: {e}')
+                cam_img=cv2.resize(cam_img,size_upsample)
+                heat_map = cv2.applyColorMap(cam_img, cv2.COLORMAP_JET)
+                # result = heat_map * 0.3 + (encode_reps * 0.5).squeeze(0).permute(1, 2, 0).cpu().data.numpy()[..., :3]
+                result = heat_map * 0.2 + ori_img * 0.8
+                os.makedirs(f'{img_metas[0]["save_path"]}/cam',exist_ok=True)
+                cv2.imwrite(f'{img_metas[0]["save_path"]}/cam/cls_{idx}_cam.png', result)
         
-        """
-        seg_logits = self.decode_head.forward_test(x, img_metas, self.test_cfg)
+        seg_logits=self.decode_head.forward_test(x,img_metas,self.test_cfg)
+        return_cam(feature_blobs[0], weight_softmax, weight_bias, [1, 2, 3, 4],x[0],img)
+        # for i in range(4):
+        #     heat_map = cv2.applyColorMap(cams[i], cv2.COLORMAP_JET)
+
+        #     result = heat_map * 0.3 + (x[0] * 0.5).squeeze(0).permute(1, 2, 0).cpu().data.numpy()[..., :3]
+        #     os.makedirs(f'{img_metas[0]["save_path"]}/cam',exist_ok=True)
+        #     cv2.imwrite(f'{img_metas[0]["save_path"]}/cam/cls_{i + 1}_cam.png', result)
+        
+        # *********** grad cam ***********
+        
+        # for i in range(4):
+        #     seg_logits[-1][0,i].backward()
+        #     gradients = gradients[0].mean(dim=[0, 2, 3], keepdim=True)
+        #     grad_feature=grad_blobs[0][0]
+        #     weighted_features = grad_feature * gradients.view(-1, 1, 1)
+        
+        
+        # """
+        # seg_logits = self.decode_head.forward_test(x, img_metas, self.test_cfg)
         # print(f'exception {seg_logits.size()}')
         # if isinstance(seg_logits, (list, tuple)):
         #     seg_logits = seg_logits[-1]

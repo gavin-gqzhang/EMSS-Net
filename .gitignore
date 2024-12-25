@@ -1,5 +1,7 @@
 *.pth
 .vscode
 .idea
-
+*.png
 *.pyc
+
+datasets

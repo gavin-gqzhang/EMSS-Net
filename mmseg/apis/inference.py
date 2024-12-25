@@ -42,7 +42,7 @@ def init_segmentor(config, checkpoint=None, device='cuda:0'):
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
-    model.eval()
+    # model.eval()
     return model
 
 
