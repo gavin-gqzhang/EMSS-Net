@@ -177,7 +177,7 @@ class SegFormerHead(BaseDecodeHead):
             # nor_hyp=self.restrict_nor_hyp(fused_fg) # predicte nor/hyp classes
             fused_fg=self.filter_fused_c1(torch.cat([fused_c1,fused_fg],dim=1))
             multi_cls=self.linear_pred(fused_fg)
-
+            vis_cam(self.linear_pred[0](fused_fg).data.cpu().numpy(),dou_x.argmax(dim=1).squeeze().data.cpu().numpy(),self.linear_pred[2].weight.squeeze().cpu().data.numpy(),img_metas[0]['ori_img'],img_metas[0]['save_path'],self.linear_pred[2].bias.cpu().data.numpy())
             if not self.training:
                 # multi_cls[:,0,...]=multi_cls[:,0,...]*dou_x[:,0,...]
                 # multi_cls[:,1:,...]=multi_cls[:,1:,...]*(dou_x[:,1,...].unsqueeze(1).expand(-1,self.num_classes-1,-1,-1))
@@ -304,4 +304,24 @@ def vis_features(reps,save_path,channel=1):
                 cv2.imwrite(img_save_path,color_reps)
             else:
                 cv2.imwrite(img_save_path,norm_reps)
-        
+
+def vis_cam(reps,dou_reps,weight,ori_img,save_path,bias=None):
+    size_upsample=(256,256)
+    bs,nc,h,w=reps.shape
+    output_cam=[]
+    ori_img=cv2.resize(ori_img[0].permute(1,2,0).cpu().numpy(),size_upsample)
+    for idx in [1,2,3,4]:
+        if bias is not None:
+            cam=weight[idx].dot(reps.reshape(nc,h*w))+bias[idx]
+        else:
+            cam = weight[idx].dot(reps.reshape(nc, h * w))
+        cam=cam.reshape(h,w)*dou_reps
+        cam=cam-np.min(cam)
+        cam_img=cam/np.max(cam)
+        cam_img=np.uint8(255*cam_img)
+        cam_img=cv2.resize(cam_img,size_upsample)
+        heat_map = cv2.applyColorMap(cam_img, cv2.COLORMAP_JET)
+        # result = heat_map * 0.3 + (encode_reps * 0.5).squeeze(0).permute(1, 2, 0).cpu().data.numpy()[..., :3]
+        result = heat_map * 0.2 + ori_img * 0.8
+        os.makedirs(f'{save_path}',exist_ok=True)
+        cv2.imwrite(f'{save_path}/cls_{idx}_cam.png', result)

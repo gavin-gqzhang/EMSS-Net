@@ -198,7 +198,7 @@ class EncoderDecoder(BaseSegmentor):
     def _decode_head_forward_test(self, x,img, img_metas):
         """Run forward function and calculate loss for decode head in
         inference."""
-        # """
+        """
         feature_blobs,gradients,grad_blobs=[],[],[]
         def hook_feature(module,input,output):
             feature_blobs.append(output.data.cpu().numpy())
@@ -257,9 +257,9 @@ class EncoderDecoder(BaseSegmentor):
         #     grad_feature=grad_blobs[0][0]
         #     weighted_features = grad_feature * gradients.view(-1, 1, 1)
         
-        
-        # """
-        # seg_logits = self.decode_head.forward_test(x, img_metas, self.test_cfg)
+        """
+        img_metas[0]['ori_img']=img
+        seg_logits = self.decode_head.forward_test(x, img_metas, self.test_cfg)
         # print(f'exception {seg_logits.size()}')
         # if isinstance(seg_logits, (list, tuple)):
         #     seg_logits = seg_logits[-1]
